@@ -69,6 +69,12 @@
 #define USE_NATIVE_MUTEX
 #endif
 
+#ifdef ANDROID
+int pthread_cond_timedwait_relative_np(pthread_cond_t* cond_interface,
+                                       pthread_mutex_t* mutex,
+                                       const struct timespec* rel_timeout);
+#endif
+
 static void
 g_thread_abort (gint         status,
                 const gchar *function)
