@@ -60,6 +60,9 @@
 
 #include "glibintl.h"
 
+#ifdef ANDROID
+#include <stdlib.h>
+#endif
 
 #ifndef _O_BINARY
 #define _O_BINARY 0
@@ -94,7 +97,11 @@ g_mapped_file_destroy (GMappedFile *file)
   if (file->length)
     {
 #ifdef HAVE_MMAP
+#ifdef ANDROID
+      free(file->contents);
+#else
       munmap (file->contents, file->length);
+#endif
 #endif
 #ifdef G_OS_WIN32
       UnmapViewOfFile (file->contents);
@@ -150,6 +157,16 @@ mapped_file_new_from_fd (int           fd,
   file->contents = MAP_FAILED;
 
 #ifdef HAVE_MMAP
+#ifdef ANDROID
+  file->contents = malloc(st.st_size);
+  if (file->contents) {
+    file->length = (gsize) st.st_size;
+    read(fd, file->contents, file->length);
+  } else {
+    file->length = 0;
+    file->contents = MAP_FAILED;
+  }
+#else
   if (st.st_size > G_MAXSIZE)
     {
       errno = EINVAL;
@@ -161,6 +178,7 @@ mapped_file_new_from_fd (int           fd,
 				       writable ? PROT_READ|PROT_WRITE : PROT_READ,
 				       MAP_PRIVATE, fd, 0);
     }
+#endif
 #endif
 #ifdef G_OS_WIN32
   file->length = st.st_size;
